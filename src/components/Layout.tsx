@@ -1,11 +1,13 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { CalendarBlank, ChartPieSlice, Repeat, SignOut, Wallet } from '@phosphor-icons/react'
+import { useState } from 'react'
+import { CalendarBlank, ChartPieSlice, CloudArrowDown, Repeat, SignOut, Wallet } from '@phosphor-icons/react'
 import styled from 'styled-components'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '@/auth/AuthProvider'
-import { resetDemoData } from '@/data/localApi'
 import { useRecurrenceSync } from '@/hooks/queries'
 import { NewPasswordSheet } from './NewPasswordSheet'
+import { BackupSheet } from './BackupSheet'
+import { lastBackupAt, TX_KEY } from '@/data/localApi'
 
 const Header = styled.header`
   position: sticky;
@@ -88,7 +90,7 @@ const UserBox = styled.div`
   }
 `
 
-const DemoBar = styled.div`
+const Reminder = styled.div`
   background: ${({ theme }) => theme.colors.yellow}1a;
   color: ${({ theme }) => theme.colors.yellow};
   font-size: 0.8rem;
@@ -101,9 +103,24 @@ const DemoBar = styled.div`
     color: inherit;
     text-decoration: underline;
     font-size: inherit;
+    font-weight: 700;
     margin-left: 0.35rem;
   }
 `
+
+const BACKUP_EVERY_DAYS = 30
+
+function needsBackup(): boolean {
+  try {
+    const hasData = (localStorage.getItem(TX_KEY) ?? '[]') !== '[]'
+    if (!hasData) return false
+    const last = lastBackupAt()
+    if (!last) return true
+    return Date.now() - new Date(last).getTime() > BACKUP_EVERY_DAYS * 86_400_000
+  } catch {
+    return false
+  }
+}
 
 const Main = styled.main`
   max-width: ${({ theme }) => theme.maxWidth};
@@ -150,26 +167,21 @@ const links = [
 ]
 
 export function Layout() {
-  const { user, demo, signOut } = useAuth()
+  const { user, local, signOut } = useAuth()
+  const [backupOpen, setBackupOpen] = useState(false)
   const queryClient = useQueryClient()
   useRecurrenceSync()
 
   return (
     <>
       <Header>
-        {demo && (
-          <DemoBar>
-            Modo demonstração: os dados ficam só neste navegador.
-            <button
-              type="button"
-              onClick={() => {
-                resetDemoData()
-                window.location.reload()
-              }}
-            >
-              Recomeçar exemplo
+        {local && !backupOpen && needsBackup() && (
+          <Reminder>
+            Seus dados ficam só neste aparelho.
+            <button type="button" onClick={() => setBackupOpen(true)}>
+              Fazer backup
             </button>
-          </DemoBar>
+          </Reminder>
         )}
         <HeaderInner>
           <Brand>
@@ -182,7 +194,13 @@ export function Layout() {
               </NavLink>
             ))}
           </TopNav>
-          {!demo && (
+          {local ? (
+            <UserBox>
+              <button type="button" onClick={() => setBackupOpen(true)} aria-label="Backup dos dados">
+                <CloudArrowDown size={20} /> Backup
+              </button>
+            </UserBox>
+          ) : (
             <UserBox>
               <span title={user?.email}>{user?.email}</span>
               <button type="button" onClick={async () => {
@@ -208,7 +226,7 @@ export function Layout() {
         ))}
       </BottomNav>
 
-      {!demo && <NewPasswordSheet />}
+      {local ? <BackupSheet open={backupOpen} onOpenChange={setBackupOpen} /> : <NewPasswordSheet />}
     </>
   )
 }

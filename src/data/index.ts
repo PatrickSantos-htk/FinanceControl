@@ -1,11 +1,11 @@
-import { isDemoMode, supabase } from '@/lib/supabase'
+import { isLocalMode, supabase } from '@/lib/supabase'
 import { createLocalApi } from './localApi'
 import { createSupabaseApi } from './supabaseApi'
 import { buildOccurrence, pendingMonths } from '@/domain/recurrence'
 import { monthStart } from '@/domain/month'
 import type { MonthKey } from '@/domain/types'
 
-export const api = isDemoMode ? createLocalApi() : createSupabaseApi(supabase!)
+export const api = isLocalMode ? createLocalApi() : createSupabaseApi(supabase!)
 
 /**
  * Lança automaticamente os gastos/ganhos fixos até o mês informado

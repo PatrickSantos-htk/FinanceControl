@@ -1,5 +1,6 @@
 import { useDeferredValue, useMemo, useState } from 'react'
 import { MagnifyingGlass, Plus, Receipt } from '@phosphor-icons/react'
+import { Link } from 'react-router-dom'
 import styled from 'styled-components'
 import { MonthSwitcher } from '@/components/MonthSwitcher'
 import { SummaryCards } from '@/components/SummaryCards'
@@ -207,6 +208,10 @@ export function MonthPage() {
               <Button type="button" onClick={openNew}>
                 <Plus size={18} weight="bold" /> Adicionar o primeiro
               </Button>
+              <p style={{ fontSize: '0.85rem' }}>
+                Dica: cadastre aluguel, contas e salário em <Link to="/fixos">Fixos</Link> e eles entram sozinhos todo
+                mês.
+              </p>
             </>
           ) : (
             <p>Nada encontrado com esse filtro.</p>

@@ -31,35 +31,31 @@
 
 Outros detalhes:
 
-- Login com e-mail e senha (Supabase Auth), com recuperação de senha.
-- Cada usuário só acessa os próprios dados (Row Level Security no Postgres).
+- **Sem cadastro e sem servidor:** os dados ficam salvos no próprio navegador (localStorage).
+- **Backup:** baixa um arquivo `.json` com tudo e restaura em outro aparelho (celular ↔ PC). O app avisa quando faz mais de 30 dias sem backup.
 - Valores digitados no padrão brasileiro (`1.234,56`) e somas em centavos, sem erro de arredondamento.
-- Um fixo nunca é lançado duas vezes no mesmo mês, mesmo com o app aberto no celular e no PC (constraint única no banco). Se você apagar um lançamento de fixo, ele não volta.
+- Um fixo nunca é lançado duas vezes no mesmo mês. Se você apagar um lançamento de fixo, ele não volta.
 - Instalável como app (PWA): no celular, *Adicionar à tela inicial*.
-- **Modo demonstração:** sem configurar o Supabase o app roda com dados de exemplo salvos no navegador.
+- **Pronto para nuvem:** a camada de dados tem a mesma interface para o navegador e para o Supabase (Postgres + Auth + RLS). Basta configurar as variáveis para ativar login e sincronização.
 
 ## Como usar no dia a dia
 
-### 1. Banco de dados (Supabase, plano gratuito)
-
-1. Crie um projeto em [supabase.com](https://supabase.com).
-2. Em **SQL Editor**, cole e rode o arquivo [`supabase/schema.sql`](supabase/schema.sql).
-3. Em **Authentication → URL Configuration**, coloque a URL onde o app vai ficar (ex.: `https://seu-app.vercel.app`) em *Site URL* e também `http://localhost:5173` em *Redirect URLs*.
-4. Em **Project Settings → API**, copie a *Project URL* e a chave *anon public*.
-
-### 2. Rodando localmente
-
 ```bash
-cp .env.example .env.local   # preencha VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY
 npm install
 npm run dev
 ```
 
-### 3. Publicando (Vercel)
+Para usar no celular, publique na Vercel (importar o repositório, sem configurar nada) e, no celular, abra o link e toque em *Adicionar à tela inicial*.
 
-Importe o repositório na Vercel, adicione as duas variáveis `VITE_SUPABASE_*` em *Environment Variables* e faça o deploy. O `vercel.json` já cuida das rotas do app.
+> Os dados de cada aparelho são independentes. Para levar do PC para o celular (ou vice-versa), use **Backup → Baixar backup** em um e **Restaurar** no outro.
 
-> A chave *anon* é pública por natureza: quem protege os dados são as políticas de RLS do `schema.sql`. Nunca use a chave *service_role* no front-end.
+### Opcional: sincronizar entre aparelhos com Supabase
+
+1. Crie um projeto em [supabase.com](https://supabase.com) e rode [`supabase/schema.sql`](supabase/schema.sql) no **SQL Editor**.
+2. Em **Authentication → URL Configuration**, coloque a URL do app em *Site URL*.
+3. Copie `.env.example` para `.env.local` e preencha `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` (na Vercel, em *Environment Variables*).
+
+Com as variáveis configuradas o app passa a pedir login e salva tudo no banco, com Row Level Security.
 
 ## Scripts
 
@@ -75,9 +71,9 @@ npm test           # testes das regras (dinheiro, meses, fixos, resumo e CSV)
 
 ```
 src/
-├── auth/          # sessão e login (Supabase Auth)
+├── auth/          # sessão (login só quando o Supabase está ativo)
 ├── components/    # layout, formulários, lista, cards de resumo
-├── data/          # acesso a dados: Supabase ou modo demonstração (mesma interface)
+├── data/          # acesso a dados: navegador (padrão) ou Supabase, com a mesma interface
 ├── domain/        # regras puras e testadas: dinheiro, meses, fixos, resumo, CSV
 ├── hooks/         # queries e mutations com TanStack Query
 ├── pages/         # Mês, Fixos, Relatórios, Entrar

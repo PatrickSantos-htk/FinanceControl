@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { isDemoMode, supabase } from '@/lib/supabase'
+import { isLocalMode, supabase } from '@/lib/supabase'
 
 interface AuthUser {
   id: string
@@ -10,7 +10,8 @@ interface AuthUser {
 interface AuthContextValue {
   user: AuthUser | null
   loading: boolean
-  demo: boolean
+  /** dados salvos só neste navegador (sem conta) */
+  local: boolean
   signIn(email: string, password: string): Promise<void>
   signUp(email: string, password: string): Promise<{ needsConfirmation: boolean }>
   resetPassword(email: string): Promise<void>
@@ -22,7 +23,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-const DEMO_USER: AuthUser = { id: 'demo', email: 'modo demonstração' }
+const LOCAL_USER: AuthUser = { id: 'local', email: 'neste aparelho' }
 
 function translate(message: string): string {
   const m = message.toLowerCase()
@@ -36,7 +37,7 @@ function translate(message: string): string {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(!isDemoMode)
+  const [loading, setLoading] = useState(!isLocalMode)
   const [recovering, setRecovering] = useState(false)
 
   useEffect(() => {
@@ -53,8 +54,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo<AuthContextValue>(() => {
-    const user: AuthUser | null = isDemoMode
-      ? DEMO_USER
+    const user: AuthUser | null = isLocalMode
+      ? LOCAL_USER
       : session
         ? { id: session.user.id, email: session.user.email ?? '' }
         : null
@@ -62,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return {
       user,
       loading,
-      demo: isDemoMode,
+      local: isLocalMode,
       async signIn(email, password) {
         const { error } = await supabase!.auth.signInWithPassword({ email, password })
         if (error) throw new Error(translate(error.message))

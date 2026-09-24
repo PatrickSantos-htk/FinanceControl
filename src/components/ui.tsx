@@ -206,6 +206,7 @@ export const Empty = styled.div`
   gap: 0.75rem;
 
   svg { color: ${({ theme }) => theme.colors.textSubtle}; }
+  a { color: ${({ theme }) => theme.colors.green}; font-weight: 700; }
 `
 
 export const ErrorBox = styled.div`

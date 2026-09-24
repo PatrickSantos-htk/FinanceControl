@@ -1,10 +1,9 @@
 import { newId } from '@/lib/id'
-import { addMonths, currentMonth, dateInMonth, monthStart } from '@/domain/month'
 import type { Recurrence, Transaction, TransactionInput } from '@/domain/types'
 import type { DataApi } from './api'
 
-const TX_KEY = 'fc:demo:transactions'
-const REC_KEY = 'fc:demo:recurrences'
+export const TX_KEY = 'fc:transactions'
+export const REC_KEY = 'fc:recurrences'
 
 function read<T>(key: string): T[] {
   try {
@@ -35,74 +34,15 @@ function tx(input: TransactionInput): Transaction {
   }
 }
 
-/** Dados de exemplo para quem abre o app sem configurar o Supabase. */
-function seed() {
-  const m0 = currentMonth()
-  const months = [addMonths(m0, -2), addMonths(m0, -1), m0]
-  const recs: Recurrence[] = [
-    ['Salário', 'income', 'Salário', 3200, 5],
-    ['Aluguel', 'outcome', 'Moradia', 1100, 10],
-    ['Internet', 'outcome', 'Contas da casa', 99.9, 15],
-    ['Academia', 'outcome', 'Lazer', 89.9, 8],
-    ['Streaming', 'outcome', 'Assinaturas', 39.9, 20],
-  ].map(([description, type, category, amount, day]) => ({
-    id: newId(),
-    description: description as string,
-    type: type as Recurrence['type'],
-    category: category as string,
-    amount: amount as number,
-    day_of_month: day as number,
-    start_month: monthStart(months[0]),
-    end_month: null,
-    active: true,
-    last_generated_month: monthStart(m0),
-    created_at: now(),
-  }))
-
-  const txs: Transaction[] = []
-  const today = new Date().getDate()
-  months.forEach((m, i) => {
-    const isCurrent = i === months.length - 1
-    for (const r of recs) {
-      txs.push(
-        tx({
-          description: r.description,
-          type: r.type,
-          category: r.category,
-          amount: r.amount,
-          date: dateInMonth(m, r.day_of_month),
-          paid: !isCurrent || r.day_of_month <= today,
-          recurrence_id: r.id,
-          ref_month: monthStart(m),
-        }),
-      )
-    }
-    const extras: [string, Transaction['type'], string, number, number][] = [
-      ['Mercado do mês', 'outcome', 'Mercado', 480 + i * 35, 3],
-      ['Uber', 'outcome', 'Transporte', 62.4 + i * 8, 12],
-      ['Delivery', 'outcome', 'Alimentação', 78.5, 17],
-      ['Farmácia', 'outcome', 'Saúde', 45 + i * 10, 22],
-      ['Projeto freelance', 'income', 'Freelance', 600 + i * 150, 25],
-    ]
-    for (const [description, type, category, amount, day] of extras) {
-      if (isCurrent && day > today) continue
-      txs.push(
-        tx({ description, type, category, amount, date: dateInMonth(m, day), paid: true }),
-      )
-    }
-  })
-  write(REC_KEY, recs)
-  write(TX_KEY, txs)
-}
-
 const sortTx = (a: Transaction, b: Transaction) =>
   b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at)
 
-const delay = <T>(v: T) => new Promise<T>((r) => setTimeout(() => r(v), 60))
+const delay = <T>(v: T) => Promise.resolve(v)
 
 export function createLocalApi(): DataApi {
+  // Pede ao navegador para não apagar os dados quando faltar espaço.
   try {
-    if (localStorage.getItem(TX_KEY) === null) seed()
+    navigator.storage?.persist?.()
   } catch {
     /* ignora */
   }
@@ -167,7 +107,62 @@ export function createLocalApi(): DataApi {
   }
 }
 
-export function resetDemoData() {
+export interface Backup {
+  app: 'FinanceControl'
+  version: 1
+  exportedAt: string
+  transactions: Transaction[]
+  recurrences: Recurrence[]
+}
+
+const LAST_BACKUP_KEY = 'fc:last-backup'
+
+export function exportBackup(): Backup {
+  const backup: Backup = {
+    app: 'FinanceControl',
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    transactions: read<Transaction>(TX_KEY),
+    recurrences: read<Recurrence>(REC_KEY),
+  }
+  try {
+    localStorage.setItem(LAST_BACKUP_KEY, backup.exportedAt)
+  } catch {
+    /* ignora */
+  }
+  return backup
+}
+
+export function lastBackupAt(): string | null {
+  try {
+    return localStorage.getItem(LAST_BACKUP_KEY)
+  } catch {
+    return null
+  }
+}
+
+/** Valida e substitui todos os dados pelos do arquivo. Retorna a contagem restaurada. */
+export function importBackup(raw: string): { transactions: number; recurrences: number } {
+  let data: Partial<Backup>
+  try {
+    data = JSON.parse(raw)
+  } catch {
+    throw new Error('Arquivo inválido: não é um backup do FinanceControl.')
+  }
+  if (data.app !== 'FinanceControl' || !Array.isArray(data.transactions) || !Array.isArray(data.recurrences)) {
+    throw new Error('Arquivo inválido: não é um backup do FinanceControl.')
+  }
+  const okTx = data.transactions.every(
+    (t) => t && typeof t.id === 'string' && typeof t.amount === 'number' && /^\d{4}-\d{2}-\d{2}$/.test(t.date),
+  )
+  const okRec = data.recurrences.every((r) => r && typeof r.id === 'string' && typeof r.amount === 'number')
+  if (!okTx || !okRec) throw new Error('O backup está corrompido ou incompleto.')
+  write(TX_KEY, data.transactions)
+  write(REC_KEY, data.recurrences)
+  return { transactions: data.transactions.length, recurrences: data.recurrences.length }
+}
+
+export function clearAllData() {
   try {
     localStorage.removeItem(TX_KEY)
     localStorage.removeItem(REC_KEY)
