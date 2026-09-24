@@ -1,73 +1,95 @@
-# 💸 Controle de Finanças
+<h1 align="center">💰 FinanceControl</h1>
 
-**Controle de Finanças** é uma aplicação web voltada para a organização das finanças pessoais. Com uma interface simples, intuitiva e responsiva, o sistema permite cadastrar, exibir e buscar transações financeiras, facilitando o controle de entradas, saídas e saldo total.
+<p align="center">
+  Controle financeiro pessoal para o dia a dia: ganhos e gastos do mês, gastos fixos lançados sozinhos,
+  relatórios com gráficos e exportação para planilha. Funciona no celular (instalável) e no PC.
+</p>
 
-## 🚀 Funcionalidades
+<p align="center">
+  <img src="https://img.shields.io/badge/React_18-20232A?style=flat-square&logo=react&logoColor=61DAFB" />
+  <img src="https://img.shields.io/badge/TypeScript-3178C6?style=flat-square&logo=typescript&logoColor=white" />
+  <img src="https://img.shields.io/badge/Vite-646CFF?style=flat-square&logo=vite&logoColor=white" />
+  <img src="https://img.shields.io/badge/Supabase-3FCF8E?style=flat-square&logo=supabase&logoColor=white" />
+  <img src="https://img.shields.io/badge/TanStack_Query-FF4154?style=flat-square&logo=reactquery&logoColor=white" />
+  <img src="https://img.shields.io/badge/styled--components-DB7093?style=flat-square&logo=styledcomponents&logoColor=white" />
+  <img src="https://img.shields.io/badge/PWA-5A0FC8?style=flat-square&logo=pwa&logoColor=white" />
+</p>
 
-- ✅ **Cadastro de Transações**: Registre entradas ou saídas com descrição, valor e categoria
-- ✅ **Exibição de Transações**: Tabela com todas as transações e seus respectivos detalhes
-- ✅ **Resumo Financeiro**: Total de entradas, saídas e saldo disponível
-- ✅ **Busca de Transações**: Filtragem de transações por descrição ou categoria
-- ✅ **Modal de Cadastro**: Interface amigável e acessível para adicionar novas transações
+<p align="center">
+  <img src="docs/mobile-mes.png" width="240" alt="Visão do mês no celular" />
+  <img src="docs/mobile-fixos.png" width="240" alt="Gastos fixos" />
+  <img src="docs/mobile-relatorios.png" width="240" alt="Relatórios" />
+</p>
 
-## 🛠️ Tecnologias Utilizadas
+## O que ele faz
 
-- [React](https://reactjs.org/) — Biblioteca JavaScript para interfaces declarativas
-- [TypeScript](https://www.typescriptlang.org/) — Superset de JavaScript com tipagem estática
-- [Styled Components](https://styled-components.com/) — CSS-in-JS para estilização de componentes
-- [Context API](https://reactjs.org/docs/context.html) — Gerenciamento de estado global
-- [React Hook Form](https://react-hook-form.com/) — Gerenciamento de formulários
-- [Zod](https://zod.dev/) — Validação de dados no frontend
-- [Axios](https://axios-http.com/) — Requisições HTTP à API
-- [Phosphor React](https://phosphoricons.com/) — Biblioteca de ícones
-- [Radix UI](https://www.radix-ui.com/) — Componentes acessíveis, como modais
+| Aba | Para quê |
+| :--- | :--- |
+| **Mês** | Navega mês a mês com saldo, entradas e saídas, comparação com o mês anterior, busca e filtros (entradas, saídas, pendentes). Um toque marca a conta como paga. |
+| **Fixos** | Cadastra aluguel, internet, assinaturas, salário… O app lança sozinho todo mês como *pendente*, mostra quanto da renda fixa já está comprometido e permite pausar ou encerrar. Nos meses futuros os fixos aparecem como *previstos*. |
+| **Relatórios** | Entradas x saídas x saldo dos últimos 3, 6 ou 12 meses, gastos por categoria (mês ou período), média mensal, taxa de economia e exportação em CSV (abre direto no Excel e no Google Planilhas). |
 
-## 📦 Como Rodar o Projeto Localmente
+Outros detalhes:
 
-1. Clone o repositório:
+- Login com e-mail e senha (Supabase Auth), com recuperação de senha.
+- Cada usuário só acessa os próprios dados (Row Level Security no Postgres).
+- Valores digitados no padrão brasileiro (`1.234,56`) e somas em centavos, sem erro de arredondamento.
+- Um fixo nunca é lançado duas vezes no mesmo mês, mesmo com o app aberto no celular e no PC (constraint única no banco). Se você apagar um lançamento de fixo, ele não volta.
+- Instalável como app (PWA): no celular, *Adicionar à tela inicial*.
+- **Modo demonstração:** sem configurar o Supabase o app roda com dados de exemplo salvos no navegador.
 
+## Como usar no dia a dia
 
-git clone https://github.com/seu-usuario/controle-financas.git
-cd controle-financas
+### 1. Banco de dados (Supabase, plano gratuito)
 
-2. Instale as dependências:
-    npm install
+1. Crie um projeto em [supabase.com](https://supabase.com).
+2. Em **SQL Editor**, cole e rode o arquivo [`supabase/schema.sql`](supabase/schema.sql).
+3. Em **Authentication → URL Configuration**, coloque a URL onde o app vai ficar (ex.: `https://seu-app.vercel.app`) em *Site URL* e também `http://localhost:5173` em *Redirect URLs*.
+4. Em **Project Settings → API**, copie a *Project URL* e a chave *anon public*.
 
+### 2. Rodando localmente
 
-3. Inicie o JSON Server para simular o banco de dados:
-npx json-server server.json
+```bash
+cp .env.example .env.local   # preencha VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY
+npm install
+npm run dev
+```
 
+### 3. Publicando (Vercel)
 
-4. Inicie o servidor de desenvolvimento:
-npm start
+Importe o repositório na Vercel, adicione as duas variáveis `VITE_SUPABASE_*` em *Environment Variables* e faça o deploy. O `vercel.json` já cuida das rotas do app.
 
+> A chave *anon* é pública por natureza: quem protege os dados são as políticas de RLS do `schema.sql`. Nunca use a chave *service_role* no front-end.
 
-## 📊 Como Funciona
-A aplicação é composta por três seções principais:
+## Scripts
 
-Cadastro de Transações: Modal para adicionar novas transações com validação
+```bash
+npm run dev        # ambiente de desenvolvimento
+npm run build      # checagem de tipos + build de produção
+npm run preview    # testa o build localmente
+npm run lint       # ESLint
+npm test           # testes das regras (dinheiro, meses, fixos, resumo e CSV)
+```
 
-Tabela de Transações: Exibição dinâmica com filtro por descrição/categoria
+## Estrutura
 
-Resumo Financeiro: Mostra entradas, saídas e saldo final atualizado em tempo real
+```
+src/
+├── auth/          # sessão e login (Supabase Auth)
+├── components/    # layout, formulários, lista, cards de resumo
+├── data/          # acesso a dados: Supabase ou modo demonstração (mesma interface)
+├── domain/        # regras puras e testadas: dinheiro, meses, fixos, resumo, CSV
+├── hooks/         # queries e mutations com TanStack Query
+├── pages/         # Mês, Fixos, Relatórios, Entrar
+└── styles/        # tema e estilos globais
+supabase/schema.sql   # tabelas, índices e políticas de segurança
+public/               # manifest, ícones e service worker do PWA
+```
 
-## 🌱 Aprendizados
-Durante o desenvolvimento deste projeto, foram consolidados conhecimentos como:
+<p align="center">
+  <img src="docs/desktop-relatorios.png" width="820" alt="Relatórios no desktop" />
+</p>
 
-Uso da Context API para controle de estado global
+---
 
-React Hook Form para controle e validação de formulários de forma otimizada
-
-Estilização com Styled Components para componentes reutilizáveis
-
-Validação de dados com Zod de forma intuitiva e segura
-
-Integração com API REST fake usando JSON Server
-
-##👨‍💻 Autor
-Desenvolvido por Patrick Santos — Fullstack Developer apaixonado por soluções práticas para o dia a dia
-
-##📌 Status do Projeto
-✅ Finalizado — melhorias e novas ideias podem ser incorporadas futuramente
-![controllfinance](https://github.com/user-attachments/assets/cbed3dc6-8e5c-494f-a7b1-064697a60261)
-
+Feito por [Patrick Santos Ribeiro](https://www.linkedin.com/in/patrick-santos-162899207/). Começou como o projeto *DT Money* do curso de React da Rocketseat e foi reescrito para uso real.

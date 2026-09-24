@@ -1,24 +1,42 @@
 import { createGlobalStyle } from 'styled-components'
 
 export const GlobalStyle = createGlobalStyle`
-  * {
+  *, *::before, *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
   }
 
-  :focus {
-    outline: 0;
-    box-shadow: 0 0 0 2px ${(props) => props.theme['green-500']};
+  html {
+    -webkit-text-size-adjust: 100%;
+    color-scheme: dark;
   }
 
   body {
-    background-color: ${(props) => props.theme['gray-800']};
-    color: ${(props) => props.theme['gray-100']};
+    background: ${({ theme }) => theme.colors.bg};
+    color: ${({ theme }) => theme.colors.text};
     -webkit-font-smoothing: antialiased;
+    min-height: 100dvh;
   }
 
-  body, input, textarea, button {
-    font: 400 1rem Roboto, sans-serif;
+  body, input, textarea, button, select {
+    font: 400 1rem Roboto, system-ui, sans-serif;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.green};
+    outline-offset: 2px;
+  }
+
+  input, select, textarea {
+    font-size: 16px; /* evita zoom automático no iPhone */
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
   }
 `
